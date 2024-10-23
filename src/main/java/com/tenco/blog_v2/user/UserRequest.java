@@ -3,7 +3,7 @@ package com.tenco.blog_v2.user;
 import lombok.Data;
 
 @Data
-public class UserDTO {
+public class UserRequest {
 
     // 정적 내부 클래로 모우자
     @Data

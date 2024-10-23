@@ -21,21 +21,26 @@ public class UserService {
      * 회원 가입 서비스
      */
     @Transactional
-    public void signUp(UserDTO.JoinDTO reqDto ) {
+    public UserResponse.DTO signUp(UserRequest.JoinDTO reqDto ) {
         // 1. username <-- 유니크 확인
         Optional<User> userOp = userJPARepository.findByUsername(reqDto.getUsername());
+
         if(userOp.isPresent()) {
             throw new Exception400("중복된 유저네임입니다");
         }
-        // 회원 가입
-        userJPARepository.save(reqDto.toEntity());
+
+        // 회원 가입 처리
+        User savedUser = userJPARepository.save(reqDto.toEntity());
+        
+        // controller -> DTO 반환 처리
+        return new UserResponse.DTO(savedUser);
     }
 
     /**
      *  로그인 서비스
      *
      */
-    public User signIn(UserDTO.LoginDTO reqDTO) {
+    public User signIn(UserRequest.LoginDTO reqDTO) {
         User seessionUser = userJPARepository
                 .findByUsernameAndPassword(reqDTO.getUsername(), reqDTO.getPassword())
                 .orElseThrow( () -> new Exception401("인증되지 않았습니다"));
@@ -63,7 +68,7 @@ public class UserService {
      * @throws Exception404 사용자를 찾을 수 없는 경우 발생
      */
     @Transactional // 트랜잭션 관리
-    public User updateUser(int id, UserDTO.UpdateDTO reqDTO){
+    public User updateUser(int id, UserRequest.UpdateDTO reqDTO){
         // 1. 사용자 조회 및 예외 처리
         User user = userJPARepository.findById(id)
                 .orElseThrow(() -> new Exception404("회원정보를 찾을 수 없습니다"));

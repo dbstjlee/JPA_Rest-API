@@ -4,6 +4,7 @@ import com.tenco.blog_v2.user.User;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -15,7 +16,7 @@ public class ReplyController {
     private final HttpSession session;
 
     // 댓글 생성 기능 만들기
-    @PostMapping("/reply/save")
+    @PostMapping("/api/replies")
     public String save(ReplyDTO.SaveDTO reqDTO) {
         // 로그인 여부 확인
         User sessionUser = (User) session.getAttribute("sessionUser");
@@ -29,7 +30,7 @@ public class ReplyController {
     // 댓글 삭제
 
     // @DeleteMapping("")
-    @PostMapping("/baord/{boardId}/reply/{replyId}/delete")
+    @DeleteMapping("api/replies/{id}")
     public String delete(@PathVariable(name = "boardId") Integer boardId, @PathVariable(name = "replyId") Integer replyId) {
         // 삭제도 권한 확인
         User sessionUser = (User) session.getAttribute("sessionUser");
