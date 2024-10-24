@@ -1,15 +1,13 @@
 package com.tenco.blog_v2.common.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 // @Component  // IOC
-@Configuration
+// @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired // DI 처리
+    //@Autowired // DI 처리
     private LoginInterceptor loginInterceptor;
 
     /**
