@@ -1,18 +1,22 @@
 package com.tenco.blog_v2.board;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.tenco.blog_v2.common.utils.ApiUtil;
+import com.tenco.blog_v2.common.utils.Define;
+import com.tenco.blog_v2.common.utils.JwtUtil;
 import com.tenco.blog_v2.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Objects;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
-@Controller
+@RestController
 public class BoardController {
 
     private final BoardService boardService; // BoardService 주입
@@ -27,7 +31,7 @@ public class BoardController {
      * @return 게시글 상세보기 페이지로 리다이렉트
      */
     @PutMapping("/api/boards/{id}")
-    public String update(@PathVariable(name = "id") Integer id, @ModelAttribute(name = "updateDTO") BoardDTO.UpdateDTO updateDTO) {
+    public String update(@PathVariable(name = "id") Integer id, @ModelAttribute(name = "updateDTO") BoardRequest.UpdateDTO updateDTO) {
         // 세션에서 로그인한 사용자 정보 가져오기
         User sessionUser = (User) session.getAttribute("sessionUser");
         if (sessionUser == null) {
@@ -74,20 +78,14 @@ public class BoardController {
      * @return 메인 페이지로 리다이렉트
      */
     @PostMapping("/api/boards")
-    public String save(@ModelAttribute BoardDTO.SaveDTO dto) {
-        // 세션에서 로그인한 사용자 정보 가져오기
-        User sessionUser = (User) session.getAttribute("sessionUser");
+    public ResponseEntity<ApiUtil<BoardResponse.DTO>> save(@RequestBody BoardRequest.SaveDTO reqDto, HttpServletRequest request) {
 
-        // 세션 유효성 검증
-        if (sessionUser == null) {
-            return "redirect:/login-form"; // 로그인 페이지로 리다이렉트
-        }
+        // 여기서 사용자 정보가 필요하다.
+        User sessionUser = (User) request.getAttribute(Define.SESSIONUSER); // 토큰으로 만들어진 객체를 담음
 
         // 게시글 작성 서비스 호출
-        boardService.createBoard(dto, sessionUser);
-
-        // 메인 페이지로 리다이렉트
-        return "redirect:/";
+        BoardResponse.DTO resDTO =  boardService.createBoard(reqDto, sessionUser);
+        return ResponseEntity.ok(new ApiUtil<>(resDTO));
     }
 
     /**
@@ -99,31 +97,35 @@ public class BoardController {
      * @return 게시글 상세보기 페이지 뷰
      */
     // 누구나 다 봐야 하기 때문에 mapping에 api 제외
-    @GetMapping("/boards/{id}/detail")
-    public String detail(@PathVariable Integer id, HttpServletRequest request) {
-        // 세션에서 로그인한 사용자 정보 가져오기
-        User sessionUser = (User) session.getAttribute("sessionUser");
-        Board board = boardService.getBoardDetails(id, sessionUser);
+    @GetMapping("/boards/{id}")
+    public ResponseEntity<?> detail(@PathVariable Integer id, HttpServletRequest request) {
+        User sessionUser = null;
+        
+        // API 경로가 아니기 때문에 JWWT 토큰이 있는지 여부 검사 해보자
+        String authorizationHeader = request.getHeader(Define.AUTHORIZATION);
+        if(authorizationHeader != null && authorizationHeader.startsWith(Define.BEARER)) {
+            // 인증된 사용자 이다.(여기 안에 오면)
+            String token = authorizationHeader.replace(Define.BEARER, ""); // 토큰만 추출함.
+            try {
+            sessionUser = JwtUtil.verify(token); // 토큰을 여기에 담음
 
-        // 현재 사용자가 게시글의 작성자인지 확인하여 isOwner 필드 설정
-        boolean isOwner = false;
-        if (sessionUser != null) {
-            if (Objects.equals(sessionUser.getId(), board.getUser().getId())) {
-                isOwner = true;
+            } catch (TokenExpiredException e) {
+                return ResponseEntity.status(401).body(new ApiUtil<>(401, "토큰 유효시간 만료"));
+            } catch (Exception e) {
+                return ResponseEntity.status(401).body(new ApiUtil<>(401, "유효하지 않은 토큰입니다."));
             }
-        }
 
-        // 뷰에 데이터 전달
-        request.setAttribute("isOwner", isOwner);
-        request.setAttribute("board", board);
-        return "board/detail";
+        }
+            // 게시글 상세보기 로직 호출 - 서비스 단ㅇ에서 수정한 DTO를 내려줘야 합니다.
+            // TODO - 수정 필요
+            return ResponseEntity.ok(new ApiUtil<>(null));
     }
 
 
     // 게시글 전체 조회
     @GetMapping({"/", "/boards"})
-    public String list() {
-        return "";
+    public ResponseEntity<List<BoardResponse.ListDTO>> list() {
+        return ResponseEntity.ok(boardService.getAllBoards());
     }
 
 }

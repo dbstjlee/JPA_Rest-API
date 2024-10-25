@@ -3,7 +3,7 @@ package com.tenco.blog_v2.board;
 import com.tenco.blog_v2.user.User;
 import lombok.Data;
 
-public class BoardDTO {
+public class BoardRequest {
 
     @Data
     public static class SaveDTO {

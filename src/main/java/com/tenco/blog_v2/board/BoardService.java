@@ -24,9 +24,10 @@ public class BoardService {
      * @param sessionUser 현재 세션에 로그인한 사용자
      */
     @Transactional // 트랜잭션 관리: 데이터베이스 연산이 성공적으로 완료되면 커밋, 실패하면 롤백
-    public void createBoard(BoardDTO.SaveDTO reqDTO, User sessionUser){
-        // 요청 DTO를 엔티티로 변환하여 저장합니다.
-        boardJPARepository.save(reqDTO.toEntity(sessionUser));
+    public BoardResponse.DTO createBoard(BoardRequest.SaveDTO reqDTO, User sessionUser){
+        // 요청 DTO를 엔티티로 변환하여 저장합니다
+        Board savedBoard = boardJPARepository.save(reqDTO.toEntity(sessionUser));
+        return new BoardResponse.DTO(savedBoard);
     }
 
 
@@ -101,7 +102,7 @@ public class BoardService {
      * 게시글 수정 서비스
      */
     @Transactional
-    public void updateBoard(int boardId, int sessionUserId, BoardDTO.UpdateDTO reqDTO) {
+    public void updateBoard(int boardId, int sessionUserId, BoardRequest.UpdateDTO reqDTO) {
         // 1. 게시글 존재 여부 확인
         Board board = boardJPARepository.findById(boardId).orElseThrow(() -> new Exception404("게시글을 찾을 수 없습니다"));
         // 2. 권한 확인
@@ -117,10 +118,16 @@ public class BoardService {
     /**
      * 모든 게시글 조회 서비스
      */
-    public List<Board> getAllBoards() {
+    // 응답 타입 변경
+    public List<BoardResponse.ListDTO> getAllBoards() {
         // 게시글을 ID 기준으로 내림차순으로 정렬해서 조회 해라.
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
-        return boardJPARepository.findAll(sort);
+        List<Board> boards = boardJPARepository.findAll(sort);
+
+        //List<Board> 를 List<BoardResponse.ListDTO> 여기 dto에 담으려면 forEach를 써서 데이터 변환이 필요함.
+        // 데이터의 변환 = map() !!
+        return boards.stream().map(BoardResponse.ListDTO::new).toList();
+
     }
 
 }

@@ -23,6 +23,7 @@ public class UserController {
 
     /**
      * 회원 정보 수정
+     * 인가 확인 필요한 요청
      */
     @PutMapping("/api/users/{id}")
     public ResponseEntity<?> update(@PathVariable(name = "id") Integer id, @RequestBody UserRequest.UpdateDTO reqDTO, HttpServletRequest request) {
